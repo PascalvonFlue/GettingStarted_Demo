@@ -1,0 +1,15 @@
+#pragma once
+#include "samd11.h"
+
+#define SMARTAG_I2C_SERCOM                  SERCOM0
+#define SMARTAG_I2C_SERCOM_GCLK_ID_CORE     SERCOM0_GCLK_ID_CORE
+#define SMARTAG_I2C_SERCOM_GCLK_ID_SLOW     SERCOM0_GCLK_ID_SLOW
+#define SMARTAG_I2C_SERCOM_APBCMASK_BIT     PM_APBCMASK_SERCOM0
+
+#define SMARTAG_I2C_SDA_PIN_INDEX           8u
+#define SMARTAG_I2C_SCL_PIN_INDEX           9u
+
+#define SMARTAG_I2C_SDA_PMUX_VALUE          MUX_PA08D_SERCOM0_PAD2
+#define SMARTAG_I2C_SCL_PMUX_VALUE          MUX_PA09D_SERCOM0_PAD3
+
+#define PORTA                               (PORT->Group[0])

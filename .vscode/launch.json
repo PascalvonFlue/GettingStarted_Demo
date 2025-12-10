@@ -1,0 +1,25 @@
+{
+  "version": "0.2.0",
+  "configurations": [
+    {
+      "name": "Debug SAMD11 Demo (DAPLink + OpenOCD)",
+      "type": "cortex-debug",
+      "request": "launch",
+      "servertype": "openocd",
+
+      "cwd": "${workspaceFolder}",
+
+      "executable": "${workspaceFolder}/make/build/Demo.elf",
+
+      "configFiles": [
+        "openocd.cfg"
+      ],
+
+      "gdbPath": "C:/Program Files (x86)/GNU Arm Embedded Toolchain/10 2021.10/bin/arm-none-eabi-gdb.exe",
+
+      "runToEntryPoint": "main",
+      "preLaunchTask": "build"
+    }
+  ]
+}
+  
