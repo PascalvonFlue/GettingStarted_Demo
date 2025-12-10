@@ -38,7 +38,8 @@ SRCS += \
   ../main.c \
   ../startup_samd11.c  \
   ../syscalls.c \
-  ../hal/hal_i2c.c
+  ../hal/hal_i2c.c \
+  ../debug.c
 
 DEFINES += \
   -D__SAMD11C14A__ \
