@@ -16,9 +16,6 @@ void i2c_clock_init(void)
     // Turn on GCLK module on APBA
     PM->APBAMASK.reg |= PM_APBAMASK_GCLK;
 
-    GCLK->CTRL.reg = GCLK_CTRL_SWRST;
-    while (GCLK->CTRL.reg & GCLK_CTRL_SWRST) {}
-
     // Generator 0: source = OSC8M, enabled
     GCLK->GENCTRL.reg =
           GCLK_GENCTRL_ID(0)
@@ -27,7 +24,7 @@ void i2c_clock_init(void)
     while (GCLK->STATUS.bit.SYNCBUSY) {}
 
     // Turn on SERCOM0 in PM APBC
-    PM->APBCMASK.reg |= PM_APBCMASK_SERCOM0;
+    PM->APBCMASK.reg |= SMARTAG_I2C_SERCOM_APBCMASK_BIT;
 
     // Route GCLK0 to SERCOM0 core
     *((volatile uint8_t*)&GCLK->CLKCTRL.reg) = SMARTAG_I2C_SERCOM_GCLK_ID_CORE;
@@ -50,7 +47,6 @@ void i2c_clock_init(void)
 
 void i2c_pin_init(void)
 {
-    // PA08 - Pin4 - SDA and PA09 - PIN 5 - SCL
     pin_set_peripheral_function(SMARTAG_I2C_SDA_PINMUX);
     pin_set_peripheral_function(SMARTAG_I2C_SCL_PINMUX);
 }
@@ -61,29 +57,31 @@ void hal_i2c_init(void){
 
     i2c_pin_init();
 
-    SERCOM0->I2CM.CTRLA.bit.ENABLE = 0;         //Disable befor Mod
-    while (SERCOM0->I2CM.SYNCBUSY.bit.ENABLE);
+    SMARTAG_I2C_SERCOM->I2CM.CTRLA.bit.ENABLE = 0;         //Disable befor Mod
+    while (SMARTAG_I2C_SERCOM->I2CM.SYNCBUSY.bit.ENABLE);
 
-    SERCOM0->I2CM.CTRLA.bit.SWRST = 1;          // Software reset
-    while (SERCOM0->I2CM.SYNCBUSY.bit.SWRST);
+    SMARTAG_I2C_SERCOM->I2CM.CTRLA.bit.SWRST = 1;          // Software reset
+    while (SMARTAG_I2C_SERCOM->I2CM.SYNCBUSY.bit.SWRST);
 
-    SERCOM0->I2CM.CTRLA.bit.SPEED = 0;          //Standar speed
-    SERCOM0->I2CM.CTRLA.bit.SDAHOLD = 0x2;      //Hold time 300 - 600ns
-    SERCOM0->I2CM.CTRLA.bit.RUNSTDBY = 1;       //Generic clock enabled in all sleep modes
-    SERCOM0->I2CM.CTRLA.bit.MODE = 0x5;         //Master mode
-    SERCOM0->I2CM.CTRLA.bit.PINOUT = 0;         // 2 Wire
-    SERCOM0->I2CM.CTRLB.bit.SMEN = 1;           //Smart mode
-    while(SERCOM0->I2CM.SYNCBUSY.bit.SYSOP);    //Sync
+    SMARTAG_I2C_SERCOM->I2CM.CTRLA.bit.SPEED = 0;          //Standar speed
+    SMARTAG_I2C_SERCOM->I2CM.CTRLA.bit.SDAHOLD = 0x2;      //Hold time 300 - 600ns
+    SMARTAG_I2C_SERCOM->I2CM.CTRLA.bit.RUNSTDBY = 1;       //Generic clock enabled in all sleep modes
+    SMARTAG_I2C_SERCOM->I2CM.CTRLA.bit.MODE = 0x5;         //Master mode
+    SMARTAG_I2C_SERCOM->I2CM.CTRLA.bit.PINOUT = 0;         // 2 Wire
+    SMARTAG_I2C_SERCOM->I2CM.CTRLB.bit.SMEN = 1;           //Smart mode
+    SMARTAG_I2C_SERCOM->I2CM.CTRLA.bit.LOWTOUTEN = 1;
+    while(SMARTAG_I2C_SERCOM->I2CM.SYNCBUSY.bit.SYSOP);    //Sync
 
-    SERCOM0->I2CM.BAUD.bit.BAUD = 0x34;         //100k on 8MHz
-    SERCOM0->I2CM.BAUD.bit.BAUDLOW = 0x34;
-    while(SERCOM0->I2CM.SYNCBUSY.bit.SYSOP);    //Sync
+    SMARTAG_I2C_SERCOM->I2CM.BAUD.bit.BAUD = 0x23;         //100k on 8MHz
+    SMARTAG_I2C_SERCOM->I2CM.BAUD.bit.BAUDLOW = 0x23;
+    while(SMARTAG_I2C_SERCOM->I2CM.SYNCBUSY.bit.SYSOP);    //Sync
 
-    SERCOM0->I2CM.CTRLA.bit.ENABLE = 1;         // Enable bus
-    while ((SERCOM0->I2CM.SYNCBUSY.bit.SYSOP & SERCOM0->I2CM.SYNCBUSY.bit.ENABLE));
+    SMARTAG_I2C_SERCOM->I2CM.CTRLA.bit.ENABLE = 1;         // Enable bus
+    while (SMARTAG_I2C_SERCOM->I2CM.SYNCBUSY.reg);
 
-    SERCOM0->I2CM.STATUS.bit.BUSSTATE = 1;      // Set to idel
-    while (SERCOM0->I2CM.SYNCBUSY.bit.SYSOP);
+    SMARTAG_I2C_SERCOM->I2CM.STATUS.bit.BUSSTATE = 1;      // Set to idel
+    while (SMARTAG_I2C_SERCOM->I2CM.SYNCBUSY.reg);
+    //while (SMARTAG_I2C_SERCOM->I2CM.SYNCBUSY.bit.SYSOP);
 }
 
 static void debug_dump_gclk_channel(uint8_t id, const char *name){
@@ -97,11 +95,37 @@ static void debug_dump_gclk_channel(uint8_t id, const char *name){
     debug_print_hex16(GCLK->CLKCTRL.reg);
 }
 
-void hal_i2c_test_write(void){
-    uint16_t SLAVE_ADDR = 0x01;
-    SERCOM0->I2CM.CTRLB.reg &= ~SERCOM_I2CM_CTRLB_ACKACT; //writing 0 in ACKACT bit
-    while(SERCOM0->I2CM.SYNCBUSY.bit.SYSOP);
-    SERCOM0->I2CM.ADDR.reg = (SLAVE_ADDR << 1) | 0;
+void hal_i2c_test_write(void) {
+    debug_puts("==== WRITING ====\n");
+    uint8_t addr = 0x01;  // arbitrary, no slave needed for seeing pulses
+    uint8_t data = 0x0F;
+
+    // Make sure bus is idle
+    SMARTAG_I2C_SERCOM->I2CM.STATUS.bit.BUSSTATE = 1;
+    while (SMARTAG_I2C_SERCOM->I2CM.SYNCBUSY.bit.SYSOP);
+
+    // We want to send ACKs normally
+    SMARTAG_I2C_SERCOM->I2CM.CTRLB.bit.ACKACT = 0;
+    while (SMARTAG_I2C_SERCOM->I2CM.SYNCBUSY.bit.SYSOP);
+
+    // Start transfer: write address + write bit
+    SMARTAG_I2C_SERCOM->I2CM.ADDR.bit.ADDR = (addr << 1) | 0;
+    SMARTAG_I2C_SERCOM->I2CM.DATA.bit.DATA = data;
+    // Wait a bit for MB or ERROR
+    for (uint32_t i = 0; i < 100000; i++) {
+        uint8_t flags = SMARTAG_I2C_SERCOM->I2CM.INTFLAG.reg;
+        if (flags & SERCOM_I2CM_INTFLAG_ERROR) {
+            debug_puts("I2C ERROR flag set\n");
+            break;
+        }
+        if (flags & SERCOM_I2CM_INTFLAG_MB) {
+            debug_puts("I2C MB set (address phase done)\n");
+            break;
+        }
+    }
+
+    // Dump after an actual transfer attempt
+    hal_i2c_dump_regs();
 }
 
 void hal_i2c_dump_regs(void){

@@ -12,7 +12,7 @@
           "${workspaceFolder}/hal"
         ],
         "defines": [
-          "__SAMD11C14A__",
+          "__SAMD11D14AS__",
           "DONT_USE_CMSIS_INIT",
           "F_CPU=8000000"
         ],

@@ -42,7 +42,7 @@ SRCS += \
   ../debug.c
 
 DEFINES += \
-  -D__SAMD11C14A__ \
+  -D__SAMD11D14AS__ \
   -DDONT_USE_CMSIS_INIT \
   -DF_CPU=8000000 
 
